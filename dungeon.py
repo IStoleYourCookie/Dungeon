@@ -14,7 +14,7 @@ h = int(input("Tile height: "))
 n = int(input("Deepness:    "))
 grid = [['&&&' for x in range(w)] for y in range(h)]
 
-class room:
+class rectangle:
     def __init__(self, y1, x1, y2, x2):
         self.y1 = y1
         self.x1 = x1
@@ -48,10 +48,10 @@ def generate_room(by, bx):
     invert = False
     while i < n:
 
-        main = room(random.randint(0, h), 
-                    random.randint(0, w), 
-                    random.randint(0, h), 
-                    random.randint(0, w))
+        main = rectangle(random.randint(0, h), 
+                         random.randint(0, w), 
+                         random.randint(0, h), 
+                         random.randint(0, w))
 
         for y in range(main.y2):
             for x in range(main.x2):
@@ -66,15 +66,6 @@ def generate_room(by, bx):
         i+=1
         print()
 
-main = room(0, 0, 0, 0)
-
-def generate_world():
-    for by in range(bh):
-        for bx in range(bw):
-            generate_room(by, bx)
-
-generate_world()
-
 posy = int(input("Starting y:  "))
 posx = int(input("Starting x:  "))
 bposy = int(input("Starting by: "))
@@ -82,11 +73,7 @@ bposx = int(input("Starting bx: "))
 
 loop = True
 
-print(world[0][0])
-print(world[0][1])
-print(world[1][0])
-print(world[1][1])
-input()
+first = [[True for x in range(bw)] for y in range(bh)]
 
 while loop:
     draw()
@@ -102,28 +89,32 @@ while loop:
         posx = posx - 1
     elif ch == "d":
         posx = posx + 1
-    elif ch == "i":
-        bposy -= 1
-    elif ch == "k":
-        bposy += 1
-    elif ch == "l":
-        bposx -= 1
-    elif ch == "j":
-        bposx += 1
     elif ch == "e":
         loop = False
     elif ch == "r":
-        generate_world()
+        generate_room()
     
-    if posy > h:
+    if posy == h:
         bposy += 1
-        generate_room(bposy, bposx)
+        if first[bposy][bposx]:
+            generate_room(bposy, bposx)
+            first[bposy][bposx] = False
+        posy = 0
     elif posy < 0:
         bposy -= 1
-        generate_room(bposy, bposx)
-    if posx > w:
+        if first[bposy][bposx]:
+            generate_room(bposy, bposx)
+            first[bposy][bposx] = False
+        posy = h - 1
+    if posx == w:
         bposx += 1
-        generate_room(bposy, bposx)
+        if first[bposy][bposx]:
+            generate_room(bposy, bposx)
+            first[bposy][bposx] = False
+        posx = 0
     elif posx < 0:
         bposx -= 1
-        generate_room(bposy, bposx)
+        if first[bposy][bposx]:
+            generate_room(bposy, bposx)
+            first[bposy][bposx] = False
+        posx = w - 1
