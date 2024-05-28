@@ -43,34 +43,37 @@ def draw():
         print()
     print()
 
+def generate_room(by, bx):
+    i = 0
+    invert = False
+    while i < n:
+
+        main = room(random.randint(0, h), 
+                    random.randint(0, w), 
+                    random.randint(0, h), 
+                    random.randint(0, w))
+
+        for y in range(main.y2):
+            for x in range(main.x2):
+                if not invert:
+                    world[by][bx][y - main.y1][x - main.x1] = "   "
+                else:
+                    world[by][bx][y - main.y1][x - main.x1] = "&&&"
+                
+        draw()
+
+        invert = not invert
+        i+=1
+        print()
+
 main = room(0, 0, 0, 0)
 
-def generate_room():
+def generate_world():
     for by in range(bh):
         for bx in range(bw):
-            i = 0
-            invert = False
-            while i < n:
+            generate_room(by, bx)
 
-                main = room(random.randint(0, h), 
-                            random.randint(0, w), 
-                            random.randint(0, h), 
-                            random.randint(0, w))
-
-                for y in range(main.y2):
-                    for x in range(main.x2):
-                        if not invert:
-                            world[by][bx][y - main.y1][x - main.x1] = "   "
-                        else:
-                            world[by][bx][y - main.y1][x - main.x1] = "&&&"
-                
-                draw()
-
-                invert = not invert
-                i+=1
-                print()
-
-generate_room()
+generate_world()
 
 posy = int(input("Starting y:  "))
 posx = int(input("Starting x:  "))
@@ -78,6 +81,12 @@ bposy = int(input("Starting by: "))
 bposx = int(input("Starting bx: "))
 
 loop = True
+
+print(world[0][0])
+print(world[0][1])
+print(world[1][0])
+print(world[1][1])
+input()
 
 while loop:
     draw()
@@ -104,4 +113,17 @@ while loop:
     elif ch == "e":
         loop = False
     elif ch == "r":
-        generate_room()
+        generate_world()
+    
+    if posy > h:
+        bposy += 1
+        generate_room(bposy, bposx)
+    elif posy < 0:
+        bposy -= 1
+        generate_room(bposy, bposx)
+    if posx > w:
+        bposx += 1
+        generate_room(bposy, bposx)
+    elif posx < 0:
+        bposx -= 1
+        generate_room(bposy, bposx)
