@@ -43,28 +43,30 @@ def draw():
         print()
     print()
 
-def generate_room(by, bx):
+def generate_world(by, bx):
     i = 0
     invert = False
-    while i < n:
 
+    while i < n:
+        
         main = rectangle(random.randint(0, h), 
                          random.randint(0, w), 
                          random.randint(0, h), 
                          random.randint(0, w))
-
+        
         for y in range(main.y2):
             for x in range(main.x2):
                 if not invert:
-                    world[by][bx][y - main.y1][x - main.x1] = "   "
+                    world[by][bx][y - main.y1][x - main.x1] = " . "
                 else:
                     world[by][bx][y - main.y1][x - main.x1] = "&&&"
-                
+                            
         draw()
 
         invert = not invert
         i+=1
         print()
+
 
 posy = int(input("Starting y:  "))
 posx = int(input("Starting x:  "))
@@ -73,13 +75,16 @@ bposx = int(input("Starting bx: "))
 
 loop = True
 
-first = [[True for x in range(bw)] for y in range(bh)]
+generate_world(0, 0)
 
 while loop:
     draw()
 
     ch = str(msvcrt.getch())
     ch = (ch.replace("b'", "")).strip("'")
+
+    old_posy = posy
+    old_posx = posx
 
     if ch == "w":
         posy = posy - 1
@@ -92,29 +97,60 @@ while loop:
     elif ch == "e":
         loop = False
     elif ch == "r":
-        generate_room()
+        generate_world(bposy, bposx)
     
     if posy == h:
         bposy += 1
-        if first[bposy][bposx]:
-            generate_room(bposy, bposx)
-            first[bposy][bposx] = False
+        generate_world(bposy, bposx)
         posy = 0
+        step = 1
+        while world[bposy][bposx][posy][posx] == "&&&":
+            posx += step
+            if posx == w:
+                step = -1
+                posx -= 1
+            if posx == 0:
+                generate_world(bposy, bposx)
+
     elif posy < 0:
         bposy -= 1
-        if first[bposy][bposx]:
-            generate_room(bposy, bposx)
-            first[bposy][bposx] = False
+        generate_world(bposy, bposx)
         posy = h - 1
+        step = 1
+        while world[bposy][bposx][posy][posx] == "&&&":
+            posx += step
+            if posx == w:
+                step = -1
+                posx -= 1
+            if posx == 0:
+                generate_world(bposy, bposx)
+
     if posx == w:
         bposx += 1
-        if first[bposy][bposx]:
-            generate_room(bposy, bposx)
-            first[bposy][bposx] = False
+        generate_world(bposy, bposx)
         posx = 0
+        step = 1
+        while world[bposy][bposx][posy][posx] == "&&&":
+            posy += step
+            if posy == h:
+                step = -1
+                posy -= 1
+            if posy == 0:
+                generate_world(bposy, bposx)
+
     elif posx < 0:
         bposx -= 1
-        if first[bposy][bposx]:
-            generate_room(bposy, bposx)
-            first[bposy][bposx] = False
-        posx = w - 1
+        generate_world(bposy, bposx)
+        posx = h - 1
+        step = 1
+        while world[bposy][bposx][posy][posx] == "&&&":
+            posy += step
+            if posy == w:
+                step = -1
+                posy -= 1
+            if posy == 0:
+                generate_world(bposy, bposx)
+
+    if world[bposy][bposx][posy][posx] == "&&&":
+        posy = old_posy
+        posx = old_posx
