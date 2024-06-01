@@ -1,7 +1,8 @@
 import msvcrt
 import random
 from os import system, name
- 
+
+#cross-platform clear function definition
 def clear():
     if name == 'nt':
         _ = system('cls')
@@ -9,10 +10,13 @@ def clear():
     else:
         _ = system('clear')
 
+
+#world size and generation deepness
 w = int(input("Tile width:  "))
 h = int(input("Tile height: "))
+bw = int(input("World width in tiles:  "))
+bh = int(input("World height in tiles: "))
 n = int(input("Deepness:    "))
-grid = [['&&&' for x in range(w)] for y in range(h)]
 
 class rectangle:
     def __init__(self, y1, x1, y2, x2):
@@ -21,16 +25,10 @@ class rectangle:
         self.y2 = y2
         self.x2 = x2
 
-bw = int(input("World width in tiles:  "))
-bh = int(input("World height in tiles: "))
-world = [[grid for x in range(bw)] for y in range(bh)]
+#initialising the world '4D' array
+world = [[[['&&&' for x in range(w)] for y in range(h)] for bx in range(bw)] for by in range(bh)]
 
-bposy = 0
-bposx = 0
-
-posy = 0
-posx = 0
-
+#definition of draw function
 def draw():
     clear()
     print(f"bposy: {bposy}, bposx: {bposx}, posy: {posy}, posx: {posx}")
@@ -43,7 +41,8 @@ def draw():
         print()
     print()
 
-def generate_world(by, bx):
+#definition of tile generating function
+def generate_tile(by, bx):
     i = 0
     invert = False
 
@@ -67,6 +66,7 @@ def generate_world(by, bx):
         i+=1
         print()
 
+#starting position
 
 posy = int(input("Starting y:  "))
 posx = int(input("Starting x:  "))
@@ -75,17 +75,33 @@ bposx = int(input("Starting bx: "))
 
 loop = True
 
-generate_world(0, 0)
+#pre-generate world
+for by in range(bh):
+    for bx in range(bw):
+        generate_tile(by, bx)
 
+valid_generated = [[False for x in range(w)] for y in range(h)]
+
+#main uptade loop
 while loop:
     draw()
 
+    #for debugging
+    """
+    for by in range(bh):
+        for bx in range(bw):
+            print(world[by][bx])
+    """
+
+    #get key input, will need a cross-platform solution
     ch = str(msvcrt.getch())
     ch = (ch.replace("b'", "")).strip("'")
 
+    #needed for position correction in wall collision
     old_posy = posy
     old_posx = posx
 
+    #handling input, updating position
     if ch == "w":
         posy = posy - 1
     elif ch == "s":
@@ -97,11 +113,13 @@ while loop:
     elif ch == "e":
         loop = False
     elif ch == "r":
-        generate_world(bposy, bposx)
+        generate_tile(bposy, bposx)
     
+    #paging logic for legal repositioning and regeneration of the tile, if no legal positions
     if posy == h:
         bposy += 1
-        generate_world(bposy, bposx)
+        if not valid_generated[bposy][bposx]:
+            generate_tile(bposy, bposx)
         posy = 0
         step = 1
         while world[bposy][bposx][posy][posx] == "&&&":
@@ -110,11 +128,16 @@ while loop:
                 step = -1
                 posx -= 1
             if posx == 0:
-                generate_world(bposy, bposx)
+                generate_tile(bposy, bposx)
+            elif posx < 0:
+                posx = 0
+                step = 0
+        valid_generated[bposy][bposx] = True
 
     elif posy < 0:
         bposy -= 1
-        generate_world(bposy, bposx)
+        if not valid_generated[bposy][bposx]:
+            generate_tile(bposy, bposx)
         posy = h - 1
         step = 1
         while world[bposy][bposx][posy][posx] == "&&&":
@@ -123,11 +146,16 @@ while loop:
                 step = -1
                 posx -= 1
             if posx == 0:
-                generate_world(bposy, bposx)
+                generate_tile(bposy, bposx)
+            elif posx < 0:
+                posx = 0
+                step = 0
+        valid_generated[bposy][bposx] = True
 
     if posx == w:
         bposx += 1
-        generate_world(bposy, bposx)
+        if not valid_generated[bposy][bposx]:
+            generate_tile(bposy, bposx)
         posx = 0
         step = 1
         while world[bposy][bposx][posy][posx] == "&&&":
@@ -136,20 +164,29 @@ while loop:
                 step = -1
                 posy -= 1
             if posy == 0:
-                generate_world(bposy, bposx)
+                generate_tile(bposy, bposx)
+            elif posy < 0:
+                posy = 0
+                step = 0
+        valid_generated[bposy][bposx] = True
 
     elif posx < 0:
         bposx -= 1
-        generate_world(bposy, bposx)
+        if not valid_generated[bposy][bposx]:
+            generate_tile(bposy, bposx)
         posx = h - 1
         step = 1
         while world[bposy][bposx][posy][posx] == "&&&":
             posy += step
-            if posy == w:
+            if posy == h:
                 step = -1
                 posy -= 1
             if posy == 0:
-                generate_world(bposy, bposx)
+                generate_tile(bposy, bposx)
+            elif posy < 0:
+                posy = 0
+                step = 0
+        valid_generated[bposy][bposx] = True
 
     if world[bposy][bposx][posy][posx] == "&&&":
         posy = old_posy
