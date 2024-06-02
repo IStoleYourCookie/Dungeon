@@ -18,12 +18,41 @@ bw = int(input("World width in tiles:  "))
 bh = int(input("World height in tiles: "))
 n = int(input("Deepness:    "))
 
+#rectangle class definition
 class rectangle:
     def __init__(self, y1, x1, y2, x2):
         self.y1 = y1
         self.x1 = x1
         self.y2 = y2
         self.x2 = x2
+
+#sprite class definition
+class sprite:
+    def __init__(self, by, bx, y, x, c):
+        self.by = by
+        self.bx = bx
+        self.y = y
+        self.x = x
+        self.c = c
+
+#test sprites of 'type' 'monster' initialization
+monster0 = sprite(0, 0, 1, 1, ":-)")
+monster1 = sprite(0, 0, 2, 2, ":-(")
+
+#defining the behaviour of monster 'type' sprites
+def update_monster(name: sprite):
+    oy = name.y
+    ox = name.x
+    name.y += random.randint(-1, 1)
+    name.x += random.randint(-1, 1)
+    if name.x == w or name.x == -1 or name.y == h or name.y == -1 or world[name.by][name.bx][name.y][name.x] == "&&&":
+        name.y = oy
+        name.x = ox
+
+#array to hold the information of all sprites, to add new sprites dynamically, use 'append'
+sprites = [None]
+sprites[0] = monster0
+sprites.append(monster1)
 
 #initialising the world '4D' array
 world = [[[['&&&' for x in range(w)] for y in range(h)] for bx in range(bw)] for by in range(bh)]
@@ -35,9 +64,13 @@ def draw():
     for y in range(h):
         for x in range(w):
             if y == posy and x == posx:
-                print(" @ ", end=" ")
+                char = " @ "
             else:
-                print(world[bposy][bposx][y][x], end=" ")
+                char = world[bposy][bposx][y][x]
+            for i in range(len(sprites)):
+                if sprites[i].y == y and sprites[i].x == x:
+                    char = sprites[i].c
+            print(char, end=" ")
         print()
     print()
 
@@ -80,8 +113,6 @@ for by in range(bh):
     for bx in range(bw):
         generate_tile(by, bx)
 
-valid_generated = [[False for x in range(w)] for y in range(h)]
-
 #main uptade loop
 while loop:
     draw()
@@ -118,8 +149,6 @@ while loop:
     #paging logic for legal repositioning and regeneration of the tile, if no legal positions
     if posy == h:
         bposy += 1
-        if not valid_generated[bposy][bposx]:
-            generate_tile(bposy, bposx)
         posy = 0
         step = 1
         while world[bposy][bposx][posy][posx] == "&&&":
@@ -128,16 +157,15 @@ while loop:
                 step = -1
                 posx -= 1
             if posx == 0:
-                generate_tile(bposy, bposx)
+                posx = old_posx
+                bposy += 1
+                break
             elif posx < 0:
                 posx = 0
                 step = 0
-        valid_generated[bposy][bposx] = True
 
     elif posy < 0:
         bposy -= 1
-        if not valid_generated[bposy][bposx]:
-            generate_tile(bposy, bposx)
         posy = h - 1
         step = 1
         while world[bposy][bposx][posy][posx] == "&&&":
@@ -146,16 +174,15 @@ while loop:
                 step = -1
                 posx -= 1
             if posx == 0:
-                generate_tile(bposy, bposx)
+                posx = old_posx
+                bposy += 1
+                break
             elif posx < 0:
                 posx = 0
                 step = 0
-        valid_generated[bposy][bposx] = True
 
     if posx == w:
         bposx += 1
-        if not valid_generated[bposy][bposx]:
-            generate_tile(bposy, bposx)
         posx = 0
         step = 1
         while world[bposy][bposx][posy][posx] == "&&&":
@@ -164,16 +191,15 @@ while loop:
                 step = -1
                 posy -= 1
             if posy == 0:
-                generate_tile(bposy, bposx)
+                posy = old_posy
+                bposx += 1
+                break
             elif posy < 0:
                 posy = 0
                 step = 0
-        valid_generated[bposy][bposx] = True
 
     elif posx < 0:
         bposx -= 1
-        if not valid_generated[bposy][bposx]:
-            generate_tile(bposy, bposx)
         posx = h - 1
         step = 1
         while world[bposy][bposx][posy][posx] == "&&&":
@@ -182,12 +208,16 @@ while loop:
                 step = -1
                 posy -= 1
             if posy == 0:
-                generate_tile(bposy, bposx)
+                posy = old_posy
+                bposx += 1
+                break
             elif posy < 0:
                 posy = 0
                 step = 0
-        valid_generated[bposy][bposx] = True
 
     if world[bposy][bposx][posy][posx] == "&&&":
         posy = old_posy
         posx = old_posx
+
+    update_monster(monster0)
+    update_monster(monster1)
