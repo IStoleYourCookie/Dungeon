@@ -28,26 +28,37 @@ class rectangle:
 
 #sprite class definition
 class sprite:
-    def __init__(self, by, bx, y, x, c):
+    def __init__(self, by: int, bx: int, y: int, x: int, c: str, type: str):
         self.by = by
         self.bx = bx
         self.y = y
         self.x = x
         self.c = c
+        self.type = type
 
-#test sprites of 'type' 'monster' initialization
-monster0 = sprite(0, 0, 1, 1, ":-)")
-monster1 = sprite(0, 0, 2, 2, ":-(")
+#test sprites of type 'monster' initialization
+monster0 = sprite(0, 0, 1, 1, ":-)", "monster")
+monster1 = sprite(0, 0, 2, 2, ":-(", "monster")
 
 #defining the behaviour of monster 'type' sprites
-def update_monster(name: sprite):
-    oy = name.y
-    ox = name.x
-    name.y += random.randint(-1, 1)
-    name.x += random.randint(-1, 1)
-    if name.x == w or name.x == -1 or name.y == h or name.y == -1 or world[name.by][name.bx][name.y][name.x] == "&&&":
-        name.y = oy
-        name.x = ox
+def update_monsters():
+    for name in sprites:
+        if name.type == "monster":
+            oy = name.y
+            ox = name.x
+            if oy > posy:
+                name.y += random.randint(-1, 0)
+            else:
+                name.y += random.randint(0, 1)
+            if ox > posx:
+                name.x += random.randint(-1, 0)
+            else:
+                name.x += random.randint(0, 1)
+
+            if name.x == w or name.x == -1 or name.y == h or name.y == -1 or world[name.by][name.bx][name.y][name.x] == "&&&":
+                name.y = oy
+                name.x = ox
+    
 
 #array to hold the information of all sprites, to add new sprites dynamically, use 'append'
 sprites = [None]
@@ -68,7 +79,7 @@ def draw():
             else:
                 char = world[bposy][bposx][y][x]
             for i in range(len(sprites)):
-                if sprites[i].y == y and sprites[i].x == x:
+                if sprites[i].y == y and sprites[i].x == x and sprites[i].by == bposy and sprites[i].bx == bposx:
                     char = sprites[i].c
             print(char, end=" ")
         print()
@@ -100,7 +111,6 @@ def generate_tile(by, bx):
         print()
 
 #starting position
-
 posy = int(input("Starting y:  "))
 posx = int(input("Starting x:  "))
 bposy = int(input("Starting by: "))
@@ -219,5 +229,5 @@ while loop:
         posy = old_posy
         posx = old_posx
 
-    update_monster(monster0)
-    update_monster(monster1)
+    #updating the monsters
+    update_monsters()
