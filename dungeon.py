@@ -1,6 +1,7 @@
 import msvcrt
 import random
 from os import system, name
+from typing import Dict
 
 #cross-platform clear function definition
 def clear():
@@ -20,29 +21,49 @@ n = int(input("Deepness:    "))
 
 #rectangle class definition
 class rectangle:
-    def __init__(self, y1, x1, y2, x2):
+    def __init__(self, y1: int, x1: int, y2: int, x2: int):
         self.y1 = y1
         self.x1 = x1
         self.y2 = y2
         self.x2 = x2
 
+class item:
+    def __init__(self, equipped: bool, type: str):
+        self.equipped = equipped
+        self.type = type
+
 #sprite class definition
 class sprite:
-    def __init__(self, by: int, bx: int, y: int, x: int, c: str, type: str):
+    def __init__(self, by: int, bx: int, y: int, x: int, c: str, type: str, items: Dict[str, item], equipped: str):
         self.by = by
         self.bx = bx
         self.y = y
         self.x = x
         self.c = c
         self.type = type
+        self.items = items
+        self.equipped = equipped
+
 
 #test sprites of type 'monster' initialization
-monster0 = sprite(0, 0, 1, 1, ":-)", "monster")
-monster1 = sprite(0, 0, 2, 2, ":-(", "monster")
+#monster0 = sprite(0, 0, 1, 1, ":-)", "monster")
+#monster1 = sprite(0, 0, 2, 2, ":-(", "monster")
 
-#defining the behaviour of monster 'type' sprites
-def update_monsters():
-    for name in sprites:
+sword1 = sprite(0, 0, 3, 3, "--L", "sword", {'': None}, None)
+player = sprite(0, 0, 0, 0, " @ ", "player", {'': None}, None)
+
+#dictionary to hold the information of all sprites, can add new sprites dynamically
+sprites = {}
+sprites["wooden_sword1"] = sword1
+sprites["player"] = player
+#sprites["smiley"] = monster0
+#sprites["grumpy"] = monster1
+
+#defining the behaviour of type 'monster' sprites
+def update_sprites():
+    keys_to_remove = []
+    for key in sprites:
+        name = sprites[key]
         if name.type == "monster":
             oy = name.y
             ox = name.x
@@ -58,29 +79,46 @@ def update_monsters():
             if name.x == w or name.x == -1 or name.y == h or name.y == -1 or world[name.by][name.bx][name.y][name.x] == "&&&":
                 name.y = oy
                 name.x = ox
-    
+        
+        elif name.type == "sword":
+            if bposy == name.by and bposx == name.bx and posy == name.y and posx == name.x:
+                if input("Pick up sword? (1/0) "):
+                    wooden_sword1 = item(False, "wooden_sword")
+                    sprites["player"].items.update({"wooden_sword": wooden_sword1})
+                    keys_to_remove.append("wooden_sword1")
+    for key in keys_to_remove:
+        del sprites[key]
 
-#array to hold the information of all sprites, to add new sprites dynamically, use 'append'
-sprites = [None]
-sprites[0] = monster0
-sprites.append(monster1)
+
+def use_item(actor: str):
+    if sprites[actor].equipped == "wooden_sword":
+        world[bposy][bposx][posy][posx] = "&&&"
+
 
 #initialising the world '4D' array
 world = [[[['&&&' for x in range(w)] for y in range(h)] for bx in range(bw)] for by in range(bh)]
+
+inventory = [item(False, "")]
 
 #definition of draw function
 def draw():
     clear()
     print(f"bposy: {bposy}, bposx: {bposx}, posy: {posy}, posx: {posx}")
+    for i in inventory:
+        try:
+            print(i.type, end=" ")
+        except AttributeError:
+            pass
     for y in range(h):
         for x in range(w):
             if y == posy and x == posx:
                 char = " @ "
             else:
                 char = world[bposy][bposx][y][x]
-            for i in range(len(sprites)):
-                if sprites[i].y == y and sprites[i].x == x and sprites[i].by == bposy and sprites[i].bx == bposx:
-                    char = sprites[i].c
+            for i in sprites:
+                name = sprites[i]
+                if name.y == y and name.x == x and name.by == bposy and name.bx == bposx and name.type != "player":
+                    char = name.c
             print(char, end=" ")
         print()
     print()
@@ -123,8 +161,18 @@ for by in range(bh):
     for bx in range(bw):
         generate_tile(by, bx)
 
+hand = 0
 #main uptade loop
 while loop:
+
+    #making inventory an ordinary array, so index can be easily changed to cycle between items to equip
+    inventory = [item(False, "")]*len(sprites["player"].items)
+    i = 0
+    for key in sprites["player"].items:
+        if i < len(inventory):
+            inventory[i] = sprites["player"].items[key]
+        i += 1
+
     draw()
 
     #for debugging
@@ -151,11 +199,21 @@ while loop:
         posx = posx - 1
     elif ch == "d":
         posx = posx + 1
-    elif ch == "e":
+    elif ch == "o":
         loop = False
     elif ch == "r":
         generate_tile(bposy, bposx)
-    
+    elif ch == "f":
+        use_item("player")
+    elif ch == "e":
+        if hand + 1 < len(inventory):
+            hand += 1
+    elif ch == "q":
+        if hand > 0: 
+            hand -= 1
+
+    sprites["player"].equipped = inventory[hand]
+
     #paging logic for legal repositioning and regeneration of the tile, if no legal positions
     if posy == h:
         bposy += 1
@@ -168,7 +226,8 @@ while loop:
                 posx -= 1
             if posx == 0:
                 posx = old_posx
-                bposy += 1
+                posy = h - 1
+                bposy -= 1
                 break
             elif posx < 0:
                 posx = 0
@@ -186,6 +245,7 @@ while loop:
             if posx == 0:
                 posx = old_posx
                 bposy += 1
+                posy = 0
                 break
             elif posx < 0:
                 posx = 0
@@ -202,7 +262,8 @@ while loop:
                 posy -= 1
             if posy == 0:
                 posy = old_posy
-                bposx += 1
+                bposx -= 1
+                posx = w - 1
                 break
             elif posy < 0:
                 posy = 0
@@ -220,6 +281,7 @@ while loop:
             if posy == 0:
                 posy = old_posy
                 bposx += 1
+                posx = 0
                 break
             elif posy < 0:
                 posy = 0
@@ -229,5 +291,9 @@ while loop:
         posy = old_posy
         posx = old_posx
 
+    sprites["player"].by = bposy
+    sprites["player"].bx = bposx
+    sprites["player"].y = posy
+    sprites["player"].x = posx
     #updating the monsters
-    update_monsters()
+    update_sprites()
