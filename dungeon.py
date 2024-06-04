@@ -28,9 +28,10 @@ class rectangle:
         self.x2 = x2
 
 class item:
-    def __init__(self, equipped: bool, type: str):
+    def __init__(self, equipped: bool, type: str, name: str):
         self.equipped = equipped
         self.type = type
+        self.name = name
 
 #sprite class definition
 class sprite:
@@ -49,8 +50,10 @@ class sprite:
 #monster0 = sprite(0, 0, 1, 1, ":-)", "monster")
 #monster1 = sprite(0, 0, 2, 2, ":-(", "monster")
 
-sword1 = sprite(0, 0, 3, 3, "--L", "sword", {'': None}, None)
+sword1 = sprite(0, 0, 3, 3, "--L", "wooden_sword", {'': None}, None)
 player = sprite(0, 0, 0, 0, " @ ", "player", {'': None}, None)
+
+item_table = {"wooden_sword": "--L"}
 
 #dictionary to hold the information of all sprites, can add new sprites dynamically
 sprites = {}
@@ -80,11 +83,11 @@ def update_sprites():
                 name.y = oy
                 name.x = ox
         
-        elif name.type == "sword":
+        elif name.type == "wooden_sword":
             if bposy == name.by and bposx == name.bx and posy == name.y and posx == name.x:
-                if input("Pick up sword? (1/0) "):
-                    wooden_sword1 = item(False, "wooden_sword")
-                    sprites["player"].items.update({"wooden_sword": wooden_sword1})
+                if input("Pick up sword? (1/0) ") == "1":
+                    sword = item(False, "wooden_sword", "wooden_sword")
+                    sprites["player"].items.update({"wooden_sword": sword})
                     keys_to_remove.append("wooden_sword1")
     for key in keys_to_remove:
         del sprites[key]
@@ -94,21 +97,37 @@ def use_item(actor: str):
     if sprites[actor].equipped == "wooden_sword":
         world[bposy][bposx][posy][posx] = "&&&"
 
+def equip_item(actor: str):
+    i = input("Name of item to equip: ")
+    sprites[actor].equipped = i
+
+def discard_item(actor: str):
+    if actor == "player":
+        if input("Are you sure you want to discard item? (1/0) ") == "1":
+            #(you can only discard items that are equipped)
+            del sprites["player"].items[sprites["player"].equipped]
+            sprites[actor].equipped = ""
+    del sprites[actor].items[sprites[actor].equipped]
+    sprites[actor].equipped = ""
+
+def drop_item(actor: str):
+    sp = sprites[actor]
+    i = input("Item to drop from inventory: ")
+    if sp.equipped == i:
+        del sp.items[sp.equipped]
+        sp.equipped = ""
+    sprites[i] = sprite(sp.by, sp.bx, sp.y, sp.x, item_table[i], sprites[sp.items[i]], {'' :None}, None)
+
 
 #initialising the world '4D' array
 world = [[[['&&&' for x in range(w)] for y in range(h)] for bx in range(bw)] for by in range(bh)]
 
-inventory = [item(False, "")]
 
 #definition of draw function
 def draw():
     clear()
     print(f"bposy: {bposy}, bposx: {bposx}, posy: {posy}, posx: {posx}")
-    for i in inventory:
-        try:
-            print(i.type, end=" ")
-        except AttributeError:
-            pass
+
     for y in range(h):
         for x in range(w):
             if y == posy and x == posx:
@@ -161,18 +180,19 @@ for by in range(bh):
     for bx in range(bw):
         generate_tile(by, bx)
 
-hand = 0
 #main uptade loop
 while loop:
 
     #making inventory an ordinary array, so index can be easily changed to cycle between items to equip
+    """
     inventory = [item(False, "")]*len(sprites["player"].items)
     i = 0
     for key in sprites["player"].items:
         if i < len(inventory):
             inventory[i] = sprites["player"].items[key]
         i += 1
-
+    """
+        
     draw()
 
     #for debugging
@@ -206,13 +226,12 @@ while loop:
     elif ch == "f":
         use_item("player")
     elif ch == "e":
-        if hand + 1 < len(inventory):
-            hand += 1
+        equip_item("player")
     elif ch == "q":
-        if hand > 0: 
-            hand -= 1
+        discard_item("player")
+    elif ch == "v":
+        drop_item("player")
 
-    sprites["player"].equipped = inventory[hand]
 
     #paging logic for legal repositioning and regeneration of the tile, if no legal positions
     if posy == h:
