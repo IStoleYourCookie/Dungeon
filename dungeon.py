@@ -35,7 +35,8 @@ class item:
 
 #sprite class definition
 class sprite:
-    def __init__(self, by: int, bx: int, y: int, x: int, c: str, type: str, items: Dict[str, item], equipped: str):
+    def __init__(self, by: int, bx: int, y: int, x: int, c: str, 
+                 type: str, items: Dict[str, item], equipped: str):
         self.by = by
         self.bx = bx
         self.y = y
@@ -88,7 +89,8 @@ def update_sprites():
                 if input("Pick up sword? (1/0) ") == "1":
                     sword = item(False, "wooden_sword", "wooden_sword")
                     sprites["player"].items.update({"wooden_sword": sword})
-                    keys_to_remove.append("wooden_sword1")
+                    keys_to_remove.append(key)
+                    
     for key in keys_to_remove:
         del sprites[key]
 
@@ -113,11 +115,11 @@ def discard_item(actor: str):
 def drop_item(actor: str):
     sp = sprites[actor]
     i = input("Item to drop from inventory: ")
+    sprites[i] = sprite(sp.by, sp.bx, sp.y, sp.x, item_table[i], 
+                        sp.items[i].type, {'' :None}, None)
     if sp.equipped == i:
         del sp.items[sp.equipped]
         sp.equipped = ""
-    sprites[i] = sprite(sp.by, sp.bx, sp.y, sp.x, item_table[i], sprites[sp.items[i]], {'' :None}, None)
-
 
 #initialising the world '4D' array
 world = [[[['&&&' for x in range(w)] for y in range(h)] for bx in range(bw)] for by in range(bh)]
@@ -127,6 +129,11 @@ world = [[[['&&&' for x in range(w)] for y in range(h)] for bx in range(bw)] for
 def draw():
     clear()
     print(f"bposy: {bposy}, bposx: {bposx}, posy: {posy}, posx: {posx}")
+    for key in sprites["player"].items:
+        if sprites["player"].equipped == key:
+            print("*", end='')
+        print(key, end=' ')
+    print()
 
     for y in range(h):
         for x in range(w):
@@ -167,11 +174,19 @@ def generate_tile(by, bx):
         i+=1
         print()
 
+
 #starting position
 posy = int(input("Starting y:  "))
 posx = int(input("Starting x:  "))
 bposy = int(input("Starting by: "))
 bposx = int(input("Starting bx: "))
+
+#definition of list index out of range checker of position correction
+def update_illegal():
+    if bposy < 0 or bposy == bh:
+        bposy = old_bposy
+    if bposx < 0 or bposx == bw:
+        bposx = old_bposx
 
 loop = True
 
@@ -182,25 +197,8 @@ for by in range(bh):
 
 #main uptade loop
 while loop:
-
-    #making inventory an ordinary array, so index can be easily changed to cycle between items to equip
-    """
-    inventory = [item(False, "")]*len(sprites["player"].items)
-    i = 0
-    for key in sprites["player"].items:
-        if i < len(inventory):
-            inventory[i] = sprites["player"].items[key]
-        i += 1
-    """
         
     draw()
-
-    #for debugging
-    """
-    for by in range(bh):
-        for bx in range(bw):
-            print(world[by][bx])
-    """
 
     #get key input, will need a cross-platform solution
     ch = str(msvcrt.getch())
@@ -209,6 +207,8 @@ while loop:
     #needed for position correction in wall collision
     old_posy = posy
     old_posx = posx
+    old_bposy = bposy
+    old_bposx = bposx
 
     #handling input, updating position
     if ch == "w":
@@ -236,79 +236,101 @@ while loop:
     #paging logic for legal repositioning and regeneration of the tile, if no legal positions
     if posy == h:
         bposy += 1
-        posy = 0
-        step = 1
-        while world[bposy][bposx][posy][posx] == "&&&":
-            posx += step
-            if posx == w:
-                step = -1
-                posx -= 1
-            if posx == 0:
-                posx = old_posx
-                posy = h - 1
-                bposy -= 1
-                break
-            elif posx < 0:
-                posx = 0
-                step = 0
+        if bposy == bh:
+            bposy = old_bposy
+            posy = h - 1
+        else:
+            posy = 0
+        if world[bposy][bposx][posy][posx] == "&&&":
+            step = 1
+            while world[bposy][bposx][posy][posx] == "&&&":
+                posx += step
+                if posx == w:
+                    step = -1
+                    posx -= 1
+                if posx == 0:
+                    posx = old_posx
+                    posy = h - 1
+                    bposy -= 1
+                    break
+                elif posx < 0:
+                    posx = 0
+                    step = 0
 
     elif posy < 0:
         bposy -= 1
-        posy = h - 1
+        if bposy < 0:
+            bposy = old_bposy
+            posy = 0
+        else:
+            posy = h - 1
         step = 1
-        while world[bposy][bposx][posy][posx] == "&&&":
-            posx += step
-            if posx == w:
-                step = -1
-                posx -= 1
-            if posx == 0:
-                posx = old_posx
-                bposy += 1
-                posy = 0
-                break
-            elif posx < 0:
-                posx = 0
-                step = 0
+        if world[bposy][bposx][posy][posx] == "&&&":
+            while world[bposy][bposx][posy][posx] == "&&&":
+                posx += step
+                if posx == w:
+                    step = -1
+                    posx -= 1
+                if posx == 0:
+                    posx = old_posx
+                    bposy += 1
+                    posy = 0
+                    break
+                elif posx < 0:
+                    posx = 0
+                    step = 0
 
     if posx == w:
         bposx += 1
-        posx = 0
+        if bposx == bw:
+            bposx = old_bposx
+            posx = w - 1
+        else:
+            posx = 0
         step = 1
-        while world[bposy][bposx][posy][posx] == "&&&":
-            posy += step
-            if posy == h:
-                step = -1
-                posy -= 1
-            if posy == 0:
-                posy = old_posy
-                bposx -= 1
-                posx = w - 1
-                break
-            elif posy < 0:
-                posy = 0
-                step = 0
+        if world[bposy][bposx][posy][posx] == "&&&":
+            while world[bposy][bposx][posy][posx] == "&&&":
+                posy += step
+                if posy == h:
+                    step = -1
+                    posy -= 1
+                if posy == 0:
+                    posy = old_posy
+                    bposx -= 1
+                    posx = w - 1
+                    break
+                elif posy < 0:
+                    posy = 0
+                    step = 0
 
     elif posx < 0:
         bposx -= 1
-        posx = h - 1
+        if bposx < 0:
+            bposx = old_bposx
+            posx = 0
+        else:
+            posx = w - 1
         step = 1
-        while world[bposy][bposx][posy][posx] == "&&&":
-            posy += step
-            if posy == h:
-                step = -1
-                posy -= 1
-            if posy == 0:
-                posy = old_posy
-                bposx += 1
-                posx = 0
-                break
-            elif posy < 0:
-                posy = 0
-                step = 0
+        if world[bposy][bposx][posy][posx] == "&&&":
+            while world[bposy][bposx][posy][posx] == "&&&":
+                posy += step
+                if posy == h:
+                    step = -1
+                    posy -= 1
+                if posy == 0:
+                    posy = old_posy
+                    bposx += 1
+                    posx = 0
+                    break
+                elif posy < 0:
+                    posy = 0
+                    step = 0
+
 
     if world[bposy][bposx][posy][posx] == "&&&":
         posy = old_posy
         posx = old_posx
+
 
     sprites["player"].by = bposy
     sprites["player"].bx = bposx
