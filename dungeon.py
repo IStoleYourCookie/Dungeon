@@ -36,7 +36,8 @@ class item:
 #sprite class definition
 class sprite:
     def __init__(self, by: int, bx: int, y: int, x: int, c: str, 
-                 type: str, items: Dict[str, item], equipped: str):
+                 type: str, items: Dict[str, item], equipped: str,
+                 max_health: int, health: int, armor: int, demagable: bool):
         self.by = by
         self.bx = bx
         self.y = y
@@ -45,24 +46,33 @@ class sprite:
         self.type = type
         self.items = items
         self.equipped = equipped
+        self.max_health = max_health
+        self.health = health
+        self.armor = armor
+        self.demagable = demagable
 
 
 #test sprites of type 'monster' initialization
 #monster0 = sprite(0, 0, 1, 1, ":-)", "monster")
-#monster1 = sprite(0, 0, 2, 2, ":-(", "monster")
+monster1 = sprite(0, 0, 0, 0, ":-(", "monster", {'': None}, None, 60, 60, 0, True)
 
-sword1 = sprite(0, 0, 3, 3, "--L", "wooden_sword", {'': None}, None)
-player = sprite(0, 0, 0, 0, " @ ", "player", {'': None}, None)
+wall1 = sprite(0, 0, 3, 3, "-&-", "wall_tool", {'': None}, None, 0, 0, 0, False)
+sword1 = sprite(0, 0, 2, 2, "--L", "wooden_sword", {'': None}, None, 0, 0, 0, False)
+player = sprite(0, 0, 0, 0, " @ ", "player", {'': None}, None, 100, 100, 0, True)
 
-item_table = {"wooden_sword": "--L"}
+item_table = {"wall_tool": "-&-",
+              "wooden_sword": "--L"}
 
 #dictionary to hold the information of all sprites, can add new sprites dynamically
 sprites = {}
-sprites["wooden_sword1"] = sword1
+sprites["wall_tool"] = wall1
+sprites["wooden_sword"] = sword1
 sprites["player"] = player
 #sprites["smiley"] = monster0
-#sprites["grumpy"] = monster1
+sprites["grumpy"] = monster1
 
+
+keys_to_remove = []
 #defining the behaviour of type 'monster' sprites
 def update_sprites():
     keys_to_remove = []
@@ -84,6 +94,13 @@ def update_sprites():
                 name.y = oy
                 name.x = ox
         
+        elif name.type == "wall_tool":
+            if bposy == name.by and bposx == name.bx and posy == name.y and posx == name.x:
+                if input("Pick up wall placing tool? (1/0) ") == "1":
+                    sword = item(False, "wall_tool", "wall_tool")
+                    sprites["player"].items.update({"wall_tool": sword})
+                    keys_to_remove.append(key)
+
         elif name.type == "wooden_sword":
             if bposy == name.by and bposx == name.bx and posy == name.y and posx == name.x:
                 if input("Pick up sword? (1/0) ") == "1":
@@ -95,9 +112,52 @@ def update_sprites():
         del sprites[key]
 
 
+def demage_target(name: str, dmg: int, arm: int):
+    target = sprites[name]
+    target.armor -= arm
+    target.health -= dmg
+    if target.armor < 0:
+        target.armor = 0
+    if target.health <= 0:
+        keys_to_remove.append(name)
+    print("You hit " + name + "!")
+
 def use_item(actor: str):
-    if sprites[actor].equipped == "wooden_sword":
+    keys_to_remove = []
+    if sprites[actor].equipped == "wall_tool":
         world[bposy][bposx][posy][posx] = "&&&"
+    
+    if sprites[actor].equipped == "wooden_sword":
+        ch = str(msvcrt.getch())
+        ch = (ch.replace("b'", "")).strip("'")
+
+        if ch == "w":
+            for key in sprites:
+                target = sprites[key]
+                if target.by == bposy and target.bx == bposx and target.y == posy - 1 and target.x == posx:
+                    demage_target(key, 12, 1)
+
+        if ch == "s":
+            for key in sprites:
+                target = sprites[key]
+                if target.by == bposy and target.bx == bposx and target.y == posy + 1 and target.x == posx:
+                    demage_target(key, 12, 1)
+
+        if ch == "a":
+            for key in sprites:
+                target = sprites[key]
+                if target.by == bposy and target.bx == bposx and target.y == posy and target.x == posx - 1:
+                    demage_target(key, 12, 1)
+        
+        if ch == "d":
+            for key in sprites:
+                target = sprites[key]
+                if target.by == bposy and target.bx == bposx and target.y == posy and target.x == posx + 1:
+                    demage_target(key, 12, 1)
+
+        for key in keys_to_remove:
+            del sprites[key]
+
 
 def equip_item(actor: str):
     i = input("Name of item to equip: ")
@@ -116,7 +176,7 @@ def drop_item(actor: str):
     sp = sprites[actor]
     i = input("Item to drop from inventory: ")
     sprites[i] = sprite(sp.by, sp.bx, sp.y, sp.x, item_table[i], 
-                        sp.items[i].type, {'' :None}, None)
+                        sp.items[i].type, {'' :None}, None, 0, 0, 0, False)
     if sp.equipped == i:
         del sp.items[sp.equipped]
         sp.equipped = ""
@@ -133,7 +193,7 @@ def draw():
         if sprites["player"].equipped == key:
             print("*", end='')
         print(key, end=' ')
-    print()
+    print(sprites["grumpy"].health)
 
     for y in range(h):
         for x in range(w):
