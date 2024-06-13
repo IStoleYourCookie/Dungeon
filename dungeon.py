@@ -112,7 +112,7 @@ def update_sprites():
         del sprites[key]
 
 
-def demage_target(name: str, dmg: int, arm: int):
+def damage_target(name: str, dmg: int, arm: int):
     target = sprites[name]
     target.armor -= arm
     target.health -= dmg
@@ -135,25 +135,25 @@ def use_item(actor: str):
             for key in sprites:
                 target = sprites[key]
                 if target.by == bposy and target.bx == bposx and target.y == posy - 1 and target.x == posx:
-                    demage_target(key, 12, 1)
+                    damage_target(key, 12, 1)
 
         if ch == "s":
             for key in sprites:
                 target = sprites[key]
                 if target.by == bposy and target.bx == bposx and target.y == posy + 1 and target.x == posx:
-                    demage_target(key, 12, 1)
+                    damage_target(key, 12, 1)
 
         if ch == "a":
             for key in sprites:
                 target = sprites[key]
                 if target.by == bposy and target.bx == bposx and target.y == posy and target.x == posx - 1:
-                    demage_target(key, 12, 1)
+                    damage_target(key, 12, 1)
         
         if ch == "d":
             for key in sprites:
                 target = sprites[key]
                 if target.by == bposy and target.bx == bposx and target.y == posy and target.x == posx + 1:
-                    demage_target(key, 12, 1)
+                    damage_target(key, 12, 1)
 
         for key in keys_to_remove:
             del sprites[key]
