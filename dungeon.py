@@ -28,16 +28,17 @@ class rectangle:
         self.x2 = x2
 
 class item:
-    def __init__(self, equipped: bool, type: str, name: str):
+    def __init__(self, equipped: bool, dmg: int, pen: int, type: str, name: str):
         self.equipped = equipped
         self.type = type
         self.name = name
+        self.dmg = dmg
 
 #sprite class definition
 class sprite:
     def __init__(self, by: int, bx: int, y: int, x: int, c: str, 
                  type: str, items: Dict[str, item], equipped: str,
-                 max_health: int, health: int, armor: int, demagable: bool):
+                 max_health: int, health: int, armor: int, damagable: bool):
         self.by = by
         self.bx = bx
         self.y = y
@@ -49,12 +50,12 @@ class sprite:
         self.max_health = max_health
         self.health = health
         self.armor = armor
-        self.demagable = demagable
+        self.damagable = damagable
 
 
 #test sprites of type 'monster' initialization
 #monster0 = sprite(0, 0, 1, 1, ":-)", "monster")
-monster1 = sprite(0, 0, 0, 0, ":-(", "monster", {'': None}, None, 60, 60, 0, True)
+monster1 = sprite(0, 0, 0, 0, ":-(", "monster", {'': None}, "", 60, 60, 0, True)
 
 wall1 = sprite(0, 0, 3, 3, "-&-", "wall_tool", {'': None}, None, 0, 0, 0, False)
 sword1 = sprite(0, 0, 2, 2, "--L", "wooden_sword", {'': None}, None, 0, 0, 0, False)
@@ -70,6 +71,8 @@ sprites["wooden_sword"] = sword1
 sprites["player"] = player
 #sprites["smiley"] = monster0
 sprites["grumpy"] = monster1
+
+sword = item(False, 12, 1, "wooden_sword", "wooden_sword")
 
 
 keys_to_remove = []
@@ -93,6 +96,17 @@ def update_sprites():
             if name.x == w or name.x == -1 or name.y == h or name.y == -1 or world[name.by][name.bx][name.y][name.x] == "&&&":
                 name.y = oy
                 name.x = ox
+
+            if name.by == bposy and name.bx == bposx and name.y == posy and name.x == posx:
+                if name.equipped == "":
+                    print("Cought you!")
+                    player = sprites["player"]
+                    if player.damagable:
+                        player.health -= 5
+                        if player.armor < 0:
+                            player.armor = 0
+                elif name.equipped == "wooden_sword":
+                    pass
         
         elif name.type == "wall_tool":
             if bposy == name.by and bposx == name.bx and posy == name.y and posx == name.x:
@@ -104,30 +118,31 @@ def update_sprites():
         elif name.type == "wooden_sword":
             if bposy == name.by and bposx == name.bx and posy == name.y and posx == name.x:
                 if input("Pick up sword? (1/0) ") == "1":
-                    sword = item(False, "wooden_sword", "wooden_sword")
                     sprites["player"].items.update({"wooden_sword": sword})
                     keys_to_remove.append(key)
                     
     for key in keys_to_remove:
         del sprites[key]
 
-
 def damage_target(name: str, dmg: int, arm: int):
     target = sprites[name]
-    target.armor -= arm
-    target.health -= dmg
-    if target.armor < 0:
-        target.armor = 0
-    if target.health <= 0:
-        keys_to_remove.append(name)
-    print("You hit " + name + "!")
+    if target.damagable:
+        target.armor -= arm
+        target.health -= dmg
+        if target.armor < 0:
+            target.armor = 0
+        print("You hit " + name + "!")
 
-def use_item(actor: str):
+def use_item(name: str):
     keys_to_remove = []
-    if sprites[actor].equipped == "wall_tool":
+    actor = sprites[name]
+    dmg = actor.items[actor.equipped].dmg
+    pen = actor.items[actor.equipped].pen
+    
+    if actor.equipped == "wall_tool":
         world[bposy][bposx][posy][posx] = "&&&"
     
-    if sprites[actor].equipped == "wooden_sword":
+    if actor.equipped == "wooden_sword":
         ch = str(msvcrt.getch())
         ch = (ch.replace("b'", "")).strip("'")
 
@@ -135,28 +150,38 @@ def use_item(actor: str):
             for key in sprites:
                 target = sprites[key]
                 if target.by == bposy and target.bx == bposx and target.y == posy - 1 and target.x == posx:
-                    damage_target(key, 12, 1)
+                    damage_target(key, dmg, pen)
+                    if target.health <= 0:
+                        keys_to_remove.append(key)
 
         if ch == "s":
             for key in sprites:
                 target = sprites[key]
                 if target.by == bposy and target.bx == bposx and target.y == posy + 1 and target.x == posx:
-                    damage_target(key, 12, 1)
+                    damage_target(key, dmg, pen)
+                    if target.health <= 0:
+                        keys_to_remove.append(key)
 
         if ch == "a":
             for key in sprites:
                 target = sprites[key]
                 if target.by == bposy and target.bx == bposx and target.y == posy and target.x == posx - 1:
-                    damage_target(key, 12, 1)
+                    damage_target(key, dmg, pen)
+                    if target.health <= 0:
+                        keys_to_remove.append(key)
         
         if ch == "d":
             for key in sprites:
                 target = sprites[key]
                 if target.by == bposy and target.bx == bposx and target.y == posy and target.x == posx + 1:
-                    damage_target(key, 12, 1)
+                    damage_target(key, dmg, pen)
+                    if target.health <= 0:
+                        keys_to_remove.append(key)
 
         for key in keys_to_remove:
             del sprites[key]
+
+        keys_to_remove = []
 
 
 def equip_item(actor: str):
@@ -193,7 +218,8 @@ def draw():
         if sprites["player"].equipped == key:
             print("*", end='')
         print(key, end=' ')
-    print(sprites["grumpy"].health)
+    print(f'hp: {sprites["player"].max_health}/{sprites["player"].health}, arm: {sprites["player"].armor}')
+    print()
 
     for y in range(h):
         for x in range(w):
@@ -398,3 +424,9 @@ while loop:
     sprites["player"].x = posx
     #updating the monsters
     update_sprites()
+
+    if sprites["player"].health <= 0:
+        print("You have been killed! :( Btter luck next time! :)")
+        break
+
+print("Exited game")
